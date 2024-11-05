@@ -5,7 +5,7 @@ import pathlib
 # Experiment parameters, stipulated
 # Basics
 subjectNumber = 1
-sname = f'subject{subjectNumber:02d}_plan.npy'
+sname = f'subject{subjectNumber:02d}_plan.npz'
 blockRepeats = 2
 blockLength = 12 # seconds
 imageDuration = 0.5 # seconds
@@ -82,4 +82,4 @@ for blockNumber in block_order:
         current_image_time += (imageDuration + imageISI)
     current_image_time += blockISI
 
-np.save(sname, trials)
+np.savez(sname, trials=trials, image_folder=str(imageFolder))
