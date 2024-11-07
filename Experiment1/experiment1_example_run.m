@@ -7,10 +7,8 @@ deadlinePct = 0.2; % percent of a screen refresh interval by which
 whileLoopDelta = 0.001; % 1 ms
 % to return control in while loops
 
-imageFolder = '~/Teaching/PSY427_627/datasets/fLoc_stimuli/';
-imageFolder = string(py.os.path.expanduser(imageFolder));
 subjectNumber = 1;
-fullScreen = true; % false for debugging, true to run
+fullScreen = false; % false for debugging, true to run
 imageSize = [500,500];
 textColor = [255, 255, 255];
 fixationColor = [255, 235, 0]; % a nice yellow
@@ -28,7 +26,7 @@ date.Format = 'yyyy_MM_dd_hh_mm';
 sfile = sprintf('subject%02d_%s', subjectNumber, date);
 % Instructions
 instructions_choice = 'Please press the button you want to use to respond';
-disallowedKeys = {'ESCAPE', 'q'};
+quitKeys = {'ESCAPE', 'q'};
 instructions = {'Thank you!',...
                 '',...
                 'In this experiment, you will see images of', ...
@@ -61,10 +59,21 @@ fixationRect = CenterRectOnPoint([0 0 fixationSize fixationSize], xCenter, yCent
 Screen('Preference', 'SkipSyncTests', 0);
 % Load `trials` variable
 load(sprintf('subject%02d_plan.mat', subjectNumber));
+
+if ~exist('imageFolder','var')
+    imageFolder = '~/Teaching/PSY427_627/datasets/fLoc_stimuli/';
+end
+if ~exist(imageFolder, 'dir')
+    error('Image folder does not exist!')
+end
 nTrials = length(trials);
 % preallocate trials
-fields = {'keyPressed', 'rt', 'rtAbsolute', 'blockType', 'blockNumber', 'trial', 'deltaTime'};
-responses = cell2struct(cell(length(fields), nTrials), fields, 1);
+rfields = {'keyPressed', 'rt', 'rtAbsolute', 'blockNumber', 'trial', 'deltaTime'};
+responses = cell2struct(cell(length(rfields), nTrials), rfields, 1);
+% preallocate responses
+tfields = {'load_time', 'draw_time', 'image_time', 'trial',};
+timing= cell2struct(cell(length(tfields), nTrials), tfields, 1);
+flipDelta = 0.002;
 % try / catch around opening screen
 try
     % Disable keys in matlab window
@@ -77,7 +86,7 @@ try
     FlushEvents; 
     WaitSecs(.5); 
     respKey = 'ESCAPE';
-    while any(strcmp(disallowedKeys, respKey))
+    while any(strcmp(quitKeys, respKey))
         [keyTime, keyCode, dTime] = KbWait;
         % Make sure we have one clear keypress
         if sum(keyCode) > 1
@@ -93,88 +102,62 @@ try
     KbWait;
     t0 = GetSecs;
     timeFrom = t0;
+    % Load first image
+    imgFile = fullfile(imageFolder, trials{1, 1});
+    imgOrig = imread(imgFile);
+    imgSmall = imresize(imgOrig, imageSize);
+    imageTexture = Screen('MakeTexture', win, imgSmall);
     % Loop over trials
     for itrial = 1:length(trials)
-        % Load and draw image
-        imgFile = fullfile(imageFolder, trials{itrial, 1});
+        % Load timing parameters
         onsetTime = trials{itrial, 2};
         offsetTime = trials{itrial, 3};
         isTarget = trials{itrial, 4};
         blockNumber = trials{itrial, 5};
-        imgOrig = imread(imgFile);
-        imgSmall = imresize(imgOrig, [500,500]);
-        % Preallocate responses
-        responses(itrial).rt = nan;
-        responses(itrial).rtAbsolute = nan;
-        responses(itrial).trial = itrial;
-        responses(itrial).blockType = blockNumber;
         % Draw image texture
-        imageTexture = Screen('MakeTexture', win, imgSmall);
+        draw_start = GetSecs;
         Screen('DrawTexture', win, imageTexture);
         Screen('FillOval', win, fixationColor, fixationRect);    
+        draw_done = GetSecs;
         % Use any remaining time before presentation deadline to check for
         % response keys
-        deadline = (t0 + onsetTime - deadlinePct * ifi);
-        while GetSecs < deadline
-            [keyDown, rt, keyCode, deltaTime] = KbCheck;
-            if keyDown && keyCode(respKey)
-                % record response
-                responses(itrial).rtAbsolute = rt;
-                responses(itrial).rt = rt - timeFrom;
-                responses(itrial).deltaTime = deltaTime;
-                break
-            elseif keyDown && any(keyCode(KbName(disallowedKeys)))
-                error("Manual quit!")
-            end
-            % Allow operating system to do its thing for 1 ms
-            WaitSecs(whileLoopDelta);
-        end
-        % Continue listening for quit keys if response has already been
-        % collected
-        while GetSecs < deadline
-            [keyDown, rt, keyCode, deltaTime] = KbCheck;
-            if keyDown && any(keyCode(KbName(disallowedKeys)))
-                error("Manual quit!")
-            end
-            % Allow operating system to do its thing for 1 ms
-            WaitSecs(whileLoopDelta);
-        end        
+        deadline_1 = (t0 + onsetTime - deadlinePct * ifi);
+        tmp = getResponses(deadline_1, respKey, timeFrom, whileLoopDelta, quitKeys);
+        responses(itrial) = tmp;
         
-        flipOnset = Screen('Flip', win, t0 + trials{itrial, 2});
+        flipOnset = Screen('Flip', win, t0 + trials{itrial, 2}-flipDelta);
         if isTarget
             timeFrom = flipOnset;
         end
         Screen('FillOval', win, fixationColor, fixationRect);
-        % Deadline is `deadlinePct` of a refresh before intnded flip
-        deadline = (t0 + offsetTime - deadlinePct * ifi);
-        if isnan(responses(itrial).rt)
-            while GetSecs < deadline
-                [keyDown, rt, keyCode, deltaTime] = KbCheck;
-                if keyDown && keyCode(respKey)
-                    % record response
-                    responses(itrial).rtAbsolute = rt;
-                    responses(itrial).rt = rt - timeFrom;
-                    responses(itrial).deltaTime = deltaTime;
-                    break
-                elseif keyDown && any(keyCode(KbName(disallowedKeys)))
-                    error("Manual quit!")
-                end
-                % Allow operating system to do its thing for 1 ms
-                WaitSecs(whileLoopDelta);
-            end
-        else
-            while GetSecs < deadline
-                [keyDown, rt, keyCode, deltaTime] = KbCheck;
-                if keyDown && any(keyCode(KbName(disallowedKeys)))
-                    error("Manual quit!")
-                end
-                % Allow operating system to do its thing for 1 ms
-                WaitSecs(whileLoopDelta);
-            end
+        
+        if itrial < length(trials)
+            load_start = GetSecs;
+            imgFile = fullfile(imageFolder, trials{itrial+1, 1});
+            imgOrig = imread(imgFile);
+            imgSmall = imresize(imgOrig, imageSize);
+            imageTexture = Screen('MakeTexture', win, imgSmall);
+            load_done = GetSecs; 
         end
-        flipOffset = Screen('Flip', win, t0 + trials{itrial, 3});
-        fprintf('Image time: %0.04f\n', flipOffset-flipOnset);
-        %disp(sprintf('%0.4f', flipOffset - flipOnset))
+        % Deadline is `deadlinePct` of a refresh before intnded flip
+        deadline_2 = (t0 + offsetTime - deadlinePct * ifi);
+        tmp = getResponses(deadline_2, respKey, timeFrom, whileLoopDelta, quitKeys);
+        if ~isempty(tmp.rt)
+            responses(itrial) = tmp;
+        end
+        responses(itrial).trial = itrial;
+        responses(itrial).blockNumber = blockNumber;
+
+        flipOffset = Screen('Flip', win, t0 + trials{itrial, 3}-flipDelta);
+        % Record Timing
+        timing(itrial).deadline_1 = deadline_1;
+        timing(itrial).flipOnset = flipOnset;
+        timing(itrial).flipOffset = flipOffset;
+        timing(itrial).deadline_2 = deadline_2;
+        timing(itrial).load_time = load_done-load_start;
+        timing(itrial).draw_time = draw_done-draw_start;
+        timing(itrial).image_time = flipOffset-flipOnset;
+        timing(itrial).trial = itrial;
     end
 catch %ME
     % Close screen
@@ -192,3 +175,50 @@ sca;
 ListenChar(0);
 % Close trial file
 %fclose(fid);
+image_time = [timing.image_time];
+mm = mean(image_time);
+ss = std(image_time);
+fprintf('Image time = %.05f +/- %0.5f', mm, ss);
+figure;
+bins = linspace(mm - ifi*2, mm + ifi*2, 31);
+hist(image_time, bins)
+
+function response = getResponses(deadline, respKey, timeFrom, whileLoopDelta, quitKeys)
+% Usage: [resp] = getResponses(deadline)
+% 
+if ~exist('whileLoopDelta', 'var')
+    whileLoopDelta = 0.001;
+end
+if ~exist('quitKeys', 'var')
+    quitKeys = {'ESCAPE', 'q'};
+end
+
+rfields = {'keyPressed', 'rt', 'rtAbsolute', 'blockNumber', 'trial', 'deltaTime'};
+response = cell2struct(cell(length(rfields), 1), rfields, 1);
+
+while GetSecs < deadline
+    [keyDown, rt, keyCode, deltaTime] = KbCheck;
+    if keyDown && keyCode(respKey)
+        % record response
+        response.keyPressed = KbName(keyCode);
+        response.rtAbsolute = rt;
+        response.rt = rt - timeFrom;
+        response.deltaTime = deltaTime;
+        break
+    elseif keyDown && any(keyCode(KbName(quitKeys)))
+        error("Manual quit!")
+    end
+    % Allow operating system to do its thing for 1 ms
+    WaitSecs(whileLoopDelta);
+end
+% Continue listening for quit keys if response has already been
+% collected
+while GetSecs < deadline
+    [keyDown, rt, keyCode, deltaTime] = KbCheck;
+    if keyDown && any(keyCode(KbName(quitKeys)))
+        error("Manual quit!")
+    end
+    % Allow operating system to do its thing for 1 ms
+    WaitSecs(whileLoopDelta);
+end
+end

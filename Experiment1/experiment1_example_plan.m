@@ -29,8 +29,7 @@ block_sub_categories = {
 % Image file location (assumes all images are in same folder, as they 
 % should be if you downloaded and unzipped fLoc from here: 
 % )
-imageFolder = '~/Teaching/PSY427_627/datasets/fLoc_stimuli/';
-imageFolder = string(py.os.path.expanduser(imageFolder));
+imageFolder = '/Users/mark/Teaching/PSY427_627/datasets/fLoc_stimuli/';
 imageType = 'jpg';
 
 %% Experiment parameters, computed
@@ -103,4 +102,4 @@ for iblock = 1:nBlocks
     current_image_time = current_image_time + blockISI;
 end
 
-save(sname, 'trials')
+save(sname, 'trials', 'imageFolder')
