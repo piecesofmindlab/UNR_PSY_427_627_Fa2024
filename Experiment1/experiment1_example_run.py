@@ -6,14 +6,18 @@ import numpy as np
 import pathlib
 import datetime
 
-def plot_timing(timing, hist_bounds=.1, hist_bins=15):
+def plot_timing(timing, hist_bounds=.1, mean_image_time=0.5, hist_bins=31):
     image_time = np.array([x['image_shown'] for x in timing])
     print("Mean and std of image time:")
     print(f'{np.mean(image_time):0.5f}, {np.std(image_time):0.5f}')
     fig, axs = plt.subplots()
+    # Image time
     mm = np.mean(image_time)
-    bins = np.linspace(mm-hist_bounds, mm+hist_bounds, hist_bins)
+    bins = np.linspace(mean_image_time-hist_bounds, mean_image_time+hist_bounds, hist_bins)
     axs.hist(np.array(image_time), bins=bins)
+    tk = np.arange(mean_image_time-hist_bounds, mean_image_time+hist_bounds+0.0001, hist_bounds/2)
+    axs.set_xticks(tk)
+    axs.set_xticklabels([f'{t:0.3f}' for t in tk])
 
 def get_response(deadline, key_list, responses, quit_keys=['escape','q'], delta=0.001):
     """Get response to any key in `key_list` and return control by `deadline`
@@ -62,7 +66,7 @@ def get_response(deadline, key_list, responses, quit_keys=['escape','q'], delta=
 
 # Subject specific
 subject_number = 1
-fullscreen = False # false for debugging, True to run if not on Mac
+fullscreen = False # False for debugging, True to run if not on Mac
 fullscreen_size = [600,600] # [1440, 900] # For mac retina 12" laptop,  may need to change for you! 
 # Parameters
 screenFps = 60
@@ -230,4 +234,4 @@ except:
 win.close()
 core.quit()
 
-plot_timing(timing)
+plot_timing(timing, hist_bounds=ifi*2)
