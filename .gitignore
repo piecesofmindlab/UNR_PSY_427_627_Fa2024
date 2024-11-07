@@ -1,3 +1,5 @@
+*mat
+*npz
 # Temp dir
 tmp/*
 .DS_Store
