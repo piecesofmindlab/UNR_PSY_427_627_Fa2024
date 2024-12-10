@@ -32,18 +32,20 @@ plt.tight_layout()
 fig, axs = plt.subplots(2, 1, figsize=(12, 4))
 
 # Generate and plot simple frequency signal
-T = 1.0 ## define time of interval, for simplicity 1 second, but this will work with other (integer) durations
-fs = 1000 ## Sampling frequency
-N = fs * T ## number of points (frequency * time)
+T = 10 ## define time of interval, for simplicity 1 second, but this will work with other (integer) durations
+fs = 100 ## Sampling frequency
+N = int(fs * T) ## number of points (frequency * time)
 
-signal_freq = [6, 28]
-values = [2, 6.2]
+signal_freq = [10, 29]
+#signal_freq = 
+values = [4, 6.2]
 t = np.linspace(0, 1, N) * T
+#t = np.linspace(0, T, N#)
 f = np.zeros(t.shape)
 for sig_f, val in zip(signal_freq, values):
     f += np.sin(2 * np.pi * sig_f * t) * val
 # Add noise
-f += np.random.randn(*f.shape)
+f += np.random.randn(*f.shape)  * 0
 axs[0].plot(t, f)
 axs[0].set_xlabel('Time (s)')
 # Show Fourier transform
@@ -54,7 +56,7 @@ p = np.abs(np.fft.fft(f)) / (N / 2) ## absolute value of the fft
 p = p[:int(np.ceil(N/2))] # **2? # take the power of positve freq. half 
 freq = np.arange(N/2) / T # [0:N/2-1]/T ## find the corresponding frequency in Hz 
 axs[1].plot(freq, p, '.-') ## plot on semilog scale 
-xl = 30
+xl = 40
 axs[1].set_xlim(0, xl)
 plt.xticks(range(xl))
 plt.grid(axis='x')
@@ -88,7 +90,7 @@ tmp[st:fin] = np.linspace(0, 1, middle_third_n)
 signals.append(tmp)
 # Triangle
 tmp = np.zeros(signals[0].shape)
-tmp[st:fin] = np.hstack([np.linspace(0, 1, np.floor(middle_third_n/2)), np.linspace(1, 0, np.ceil(middle_third_n/2))])
+tmp[st:fin] = np.hstack([np.linspace(0, 1, int(np.floor(middle_third_n/2))), np.linspace(1, 0, int(np.ceil(middle_third_n/2)))])
 signals.append(tmp)
 
 ylims = [[-5, 5], [-5, 5], [-1, 2], [-1, 2], [-1, 2]]

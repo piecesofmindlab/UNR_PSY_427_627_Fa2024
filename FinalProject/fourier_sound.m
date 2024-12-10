@@ -1,5 +1,5 @@
 % Fourier transform of sound
-
+% Sounds can be downloaded from piecesofmind.psyc.unr.edu/data/animal_sounds.tar.gz; they must be unzipped! 
 %% Sound directory
 sound_dir = '~/Teaching/PSY427_627/datasets/animal_sounds/';
 % This loads two critical things: the sound data, and the sound sampling
@@ -12,5 +12,6 @@ t = 1/fs:1/fs:length(y)/fs;
 plot(t, y)
 
 %% Compute Fourier transform
+
 
 % Exercise: Create WINDOWED Fourier transform! 
