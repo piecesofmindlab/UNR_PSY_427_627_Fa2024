@@ -35,7 +35,7 @@ tight_layout();
 figure;
 
 % Generate and plot simple frequency signal
-T = 1.0; % define time of interval, for simplicity 1 second, but this will work with other (integer) durations
+T = 5.0; % define time of interval, for simplicity 1 second, but this will work with other (integer) durations
 fs = 1000; % Sampling frequency
 N = fs * T; % number of points (frequency * time)
 
@@ -62,7 +62,6 @@ xlim([0 30]);
 xticks(0:30);
 grid on;
 xlabel('Frequency (cycles / second)');
-tight_layout();
 
 %% Many shapes of signals for one-dimensional Fourier transforms
 max_freq = 20; % For fft frequency plots
